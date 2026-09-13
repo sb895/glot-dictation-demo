@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dictation"
+version = "0.1.0"
+description = "Press-speak-release dictation pipeline: audio in, polished paste-ready text out."
+requires-python = ">=3.10"
+dependencies = [
+    "faster-whisper>=1.0.0",
+]
+
+[project.optional-dependencies]
+web = ["flask>=3.0.0", "gunicorn>=22.0.0"]
+openai = ["openai>=1.0.0"]
+gemini = ["google-genai>=0.3.0"]
+providers = ["openai>=1.0.0", "google-genai>=0.3.0"]
+# Heavy on purpose (torch + pyannote.audio): kept out of the base install so
+# `pip install dictation` stays lean for anyone who doesn't need speaker
+# diarization. See dictation/diarize.py for the pinned-version rationale.
+diarization = [
+    "pyannote.audio~=3.3.0",
+    "torch==2.4.0",
+    "torchaudio==2.4.0",
+    "numpy>=2.2.2",
+    "huggingface_hub==0.24.0",
+    "matplotlib>=3.5.0",
+]
+dev = ["pytest>=8.0.0"]
+
+[tool.setuptools]
+packages = ["dictation"]

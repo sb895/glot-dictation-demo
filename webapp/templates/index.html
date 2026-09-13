@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dictation demo — by Simon Baker</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f8;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-active: #dc2626;
+      --border: #e5e7eb;
+      --speaker-1: #2563eb;
+      --speaker-2: #b91c1c;
+      --speaker-3: #15803d;
+      --speaker-4: #a16207;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #17181c;
+        --card: #222327;
+        --text: #f0f0f0;
+        --muted: #9aa0a6;
+        --border: #34363b;
+        --speaker-1: #60a5fa;
+        --speaker-2: #f87171;
+        --speaker-3: #4ade80;
+        --speaker-4: #fbbf24;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+    main { width: 100%; max-width: 640px; }
+    h1 { font-size: 1.25rem; margin-bottom: 4px; }
+    p.sub { color: var(--muted); margin-top: 0; font-size: 0.9rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 16px;
+    }
+    .controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .toggle input { cursor: pointer; }
+    select {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    #recordBtn {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      padding: 18px 32px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.1s ease, transform 0.1s ease;
+    }
+    #recordBtn.recording {
+      background: var(--accent-active);
+      transform: scale(1.04);
+    }
+    button.secondary {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      min-height: 1.2em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .result-block { margin-top: 20px; }
+    .result-block h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin: 0 0 6px 0;
+    }
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin: 0 0 8px 0;
+    }
+    .cold-start-notice {
+      font-size: 0.85rem;
+      margin: 12px 0 0 0;
+    }
+    .quota-notice {
+      color: #dc2626;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .quota-notice { color: #f87171; }
+    }
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      padding: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    .dialogue {
+      width: 100%;
+      min-height: 90px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      padding: 10px;
+      font-size: 0.95rem;
+    }
+    .dialogue p { margin: 0 0 8px 0; }
+    .dialogue p:last-child { margin-bottom: 0; }
+    .dialogue .speaker-label { font-weight: 700; }
+    .dialogue .speaker-1 { color: var(--speaker-1); }
+    .dialogue .speaker-2 { color: var(--speaker-2); }
+    .dialogue .speaker-3 { color: var(--speaker-3); }
+    .dialogue .speaker-4 { color: var(--speaker-4); }
+    button.copy {
+      margin-top: 8px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .badge {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Dictation demo — by Simon Baker</h1>
+    <p class="sub">Press and hold the button, speak, release — the polish step cleans up your dictation.</p>
+    <p class="cold-start-notice"><strong>Note: if this has been idle, the first request can take 30-90+ seconds while it wakes up.</strong> It's much faster after that.</p>
+
+    <div class="card">
+      <div class="controls">
+        <button id="recordBtn">Hold to speak</button>
+        <select id="backend">
+          <option value="gemini" selected>External: Google Gemini</option>
+          <option value="local">Local LLM (Gemma) (Slower response)</option>
+          <option value="local_llama">Local LLM (Llama 3, small) (Slower response)</option>
+          <option value="openai">External: ChatGPT</option>
+        </select>
+        <button id="clearBtn" class="secondary">Clear</button>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="diarizeToggle" />
+        Detect speakers (labels turns as "Person 1" / "Person 2", inferred from the transcript text)
+      </label>
+      <div id="status">
+        <span id="spinner" class="spinner" hidden></span>
+        <span id="statusText"></span>
+      </div>
+      <p id="quotaNotice" class="quota-notice" hidden></p>
+
+      <div class="result-block">
+        <h2>Polished</h2>
+        <p class="hint">Filler words removed, mistakes corrected, punctuation added — cleaned up by: <span id="methodBadge" class="badge" hidden></span></p>
+        <textarea id="polished" readonly placeholder="Polished text will appear here…"></textarea>
+        <div id="dialogue" class="dialogue" hidden></div>
+        <button class="copy" id="copyBtn">Copy</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const recordBtn = document.getElementById("recordBtn");
+    const statusTextEl = document.getElementById("statusText");
+    const spinnerEl = document.getElementById("spinner");
+    const polishedEl = document.getElementById("polished");
+    const dialogueEl = document.getElementById("dialogue");
+    const copyBtn = document.getElementById("copyBtn");
+    const backendEl = document.getElementById("backend");
+    const diarizeToggle = document.getElementById("diarizeToggle");
+    const methodBadge = document.getElementById("methodBadge");
+    const quotaNoticeEl = document.getElementById("quotaNotice");
+    const clearBtn = document.getElementById("clearBtn");
+
+    const SPEAKER_LINE_RE = /^Person (\d+):\s*(.*)$/;
+
+    // Renders "Person N: ..." lines as colored dialogue when diarize is on and matches.
+    function renderPolished(text) {
+      const lines = text.split("\n").filter((l) => l.trim());
+      const parsed = lines.map((l) => l.match(SPEAKER_LINE_RE));
+      if (diarizeToggle.checked && parsed.length > 0 && parsed.every(Boolean)) {
+        dialogueEl.innerHTML = "";
+        for (const match of parsed) {
+          const [, speakerNum, line] = match;
+          const p = document.createElement("p");
+          p.className = "speaker-" + (((speakerNum - 1) % 4) + 1);
+          const label = document.createElement("span");
+          label.className = "speaker-label";
+          label.textContent = "Person " + speakerNum + ": ";
+          p.appendChild(label);
+          p.appendChild(document.createTextNode(line));
+          dialogueEl.appendChild(p);
+        }
+        dialogueEl.hidden = false;
+        polishedEl.hidden = true;
+      } else {
+        dialogueEl.hidden = true;
+        polishedEl.hidden = false;
+      }
+    }
+
+    function setStatus(text, spinning = false) {
+      statusTextEl.textContent = text;
+      spinnerEl.hidden = !spinning;
+    }
+
+    // Shown in the "cleaned up by:" badge under Polished.
+    const METHOD_LABELS = {
+      "llm:openai": "AI (ChatGPT)",
+      "llm:gemini": "AI (Google Gemini)",
+      "llm:local": "AI (Local Gemma)",
+      "llm:local_llama": "AI (Local Llama 3)",
+      "regex_fallback": "No AI — filler words stripped by simple rules only",
+      "regex_fallback_quota": "No AI — filler words stripped by simple rules only",
+    };
+
+    let mediaRecorder = null;
+    let chunks = [];
+    let stream = null;
+
+    async function startRecording() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        setStatus("Microphone access denied or unavailable.");
+        return;
+      }
+      chunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = onRecordingStopped;
+      mediaRecorder.start();
+      recordBtn.classList.add("recording");
+      recordBtn.textContent = "Listening…";
+      setStatus("");
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+      if (stream) {
+        stream.getTracks().forEach((t) => t.stop());
+      }
+      recordBtn.classList.remove("recording");
+      recordBtn.textContent = "Hold to speak";
+    }
+
+    async function onRecordingStopped() {
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      if (blob.size < 1000) {
+        setStatus("Recording too short, try again.");
+        return;
+      }
+      setStatus("Polishing…", true);
+      const form = new FormData();
+      form.append("audio", blob, "audio.webm");
+      form.append("backend", backendEl.value);
+      if (diarizeToggle.checked) form.append("diarize", "1");
+
+      try {
+        const res = await fetch("/api/transcribe", { method: "POST", body: form });
+        const data = await res.json();
+        if (data.error) {
+          setStatus("Error: " + data.error);
+          return;
+        }
+        polishedEl.value = data.text;
+        renderPolished(data.text);
+        methodBadge.hidden = false;
+        methodBadge.textContent = METHOD_LABELS[data.polish_method] || data.polish_method;
+        if (data.polish_method === "regex_fallback_quota") {
+          quotaNoticeEl.textContent = "Daily quota reached for this AI provider — reverted to offline, no-AI cleanup rules. Try a different backend, or wait for the quota to reset.";
+          quotaNoticeEl.hidden = false;
+        } else {
+          quotaNoticeEl.hidden = true;
+        }
+        setStatus("");
+      } catch (err) {
+        setStatus("Request failed: " + err);
+      }
+    }
+
+    recordBtn.addEventListener("mousedown", startRecording);
+    recordBtn.addEventListener("mouseup", stopRecording);
+    recordBtn.addEventListener("mouseleave", () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") stopRecording();
+    });
+    recordBtn.addEventListener("touchstart", (e) => { e.preventDefault(); startRecording(); });
+    recordBtn.addEventListener("touchend", (e) => { e.preventDefault(); stopRecording(); });
+
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(polishedEl.value);
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => (copyBtn.textContent = "Copy"), 1200);
+    });
+
+    clearBtn.addEventListener("click", () => {
+      polishedEl.value = "";
+      polishedEl.hidden = false;
+      dialogueEl.hidden = true;
+      dialogueEl.innerHTML = "";
+      setStatus("");
+      methodBadge.hidden = true;
+      methodBadge.textContent = "";
+      quotaNoticeEl.hidden = true;
+    });
+  </script>
+</body>
+</html>

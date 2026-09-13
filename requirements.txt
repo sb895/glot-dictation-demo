@@ -1,0 +1,21 @@
+faster-whisper>=1.0.0
+openai>=1.0.0
+google-genai>=0.3.0
+flask>=3.0.0
+gunicorn>=22.0.0
+
+# Speaker diarization (optional feature, see dictation/diarize.py) — pinned as a
+# matched set: pyannote.audio 3.3.x needs torchaudio>=2.2, and torch<2.3 doesn't
+# support numpy 2.x properly, so these four have to move together, not
+# individually. Verified working combination; there is no reliable set of loose
+# constraints here given the current state of the pyannote/torch ecosystem.
+# matplotlib is an undeclared pyannote.audio dependency (pipeline loading fails
+# without it) that we hit only once deployed somewhere it wasn't already present
+# transitively — added explicitly rather than relying on that being true elsewhere.
+--extra-index-url https://download.pytorch.org/whl/cpu
+pyannote.audio~=3.3.0
+torch==2.4.0
+torchaudio==2.4.0
+numpy>=2.2.2
+huggingface_hub==0.24.0
+matplotlib>=3.5.0
